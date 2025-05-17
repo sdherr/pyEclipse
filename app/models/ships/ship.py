@@ -1,6 +1,9 @@
 from abc import ABC
 from enum import StrEnum, auto
 
+from sector import Sector
+
+from app.models.player import Player
 from app.models.player import Species as S
 from app.models.ships.shipPart import ShipPart as SP
 
@@ -13,6 +16,17 @@ class ShipType(StrEnum):
     Orbital = auto()
     Monolith = auto()
     Deathmoon = auto()
+
+
+class Ship:
+    type: ShipType
+    location: Sector
+    owner: Player
+    damage: int = 0
+
+    def __init__(self, location: Sector, type: ShipType, owner: Player):
+        self.location, self.type, self.owner = location, type, owner
+        location.ships.append(self)
 
 
 class ShipBlueprint(ABC):
