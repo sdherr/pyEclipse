@@ -7,7 +7,7 @@ class EvolutionAttributes(NamedTuple):
     cost: int
 
 
-class EvolutionType(EvolutionAttributes, Enum):
+class Evolution(EvolutionAttributes, Enum):
     Extra_Build = EvolutionAttributes(auto(), 2)
     Extra_Upgrade = EvolutionAttributes(auto(), 3)
     Extra_Reputation_Ambassidor_Slot = EvolutionAttributes(auto(), 3)
@@ -34,3 +34,11 @@ class EvolutionType(EvolutionAttributes, Enum):
     VP_Reputation = EvolutionAttributes(auto(), 3)
     VP_Galactic_Center = EvolutionAttributes(auto(), 4)
     VP_Artifact = EvolutionAttributes(auto(), 6)
+
+    @classmethod
+    def init_evolution(cls) -> list["Evolution"]:
+        ret = list(Evolution)  # Start with one of each
+        # Plus a few doubles and one triple (Extra_Upgrade).
+        ret.extend([cls.Extra_Build, cls.Extra_Reputation_Draw, cls.Extra_Research, cls.Extra_Move])
+        ret.extend([cls.VP_Evolution, cls.Extra_Evolution, cls.Extra_Upgrade, cls.Extra_Upgrade])
+        return ret

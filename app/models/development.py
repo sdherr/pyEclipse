@@ -1,6 +1,8 @@
 from enum import Enum, auto
 from typing import NamedTuple
 
+from config import config
+
 
 class DevelopmentCost(NamedTuple):
     value_: int
@@ -23,3 +25,17 @@ class Development(DevelopmentCost, Enum):
     Quantum_Labs = DevelopmentCost(auto(), 0, 7, 0)
     Ancient_Labs = DevelopmentCost(auto(), 8, 0, 0)
     Genetics_Labs = DevelopmentCost(auto(), 0, 3, 5)
+
+    @classmethod
+    def init_developments(cls) -> list["Development"]:
+        ret = []
+        if config.rota_developments:
+            ret.extend([cls.Ancient_Monument, cls.Artifact_Link, cls.Diplomatic_Fleet, cls.Mining_Colony])
+            ret.extend([cls.Research_Station, cls.Trade_Fleet, cls.Shellworld])
+            if config.rota_warp_portal:
+                ret.add(cls.Warp_Portal)
+
+        if config.sotr_developments:
+            ret.extend([cls.Quantum_Labs, cls.Ancient_Labs, cls.Ancient_Monument])
+
+        return ret

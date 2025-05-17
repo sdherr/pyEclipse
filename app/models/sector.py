@@ -1,7 +1,8 @@
 from enum import Enum
 
+from app.models.config import config
 from app.models.discovery import DiscoveryTile
-from app.models.player import Player
+from app.models.player import Color, Player, Species
 from app.models.ships.ancient import AncientCruiser, AncientDreadnought, AncientInterceptor, Anomaly
 from app.models.ships.ship import Ship
 from app.models.table import Table
@@ -16,7 +17,7 @@ class Sector:
     artifacts: int = 0  # Can potentially have 2 because of Orbital Discovery
     worlds: list[World]
     ships: list[Ship]
-    controllingPlaoyer: Player
+    controllingPlayer: Player
     centerWormhole: bool = False
     deepWarp: bool = False
     monolith: bool = False
@@ -79,7 +80,7 @@ class Sector:
         # TODO: Something else for Hive sectors? 212 and 319
 
         if id == 295 or id == 395:  # Nebulas are basically three mini sectors in one. Init the mini sectors.
-            self.init_nebula()
+            self._init_nebula()
 
         # Deep Warp Sectors
         self.deepWarp = id in (189, 289, 389)
@@ -115,19 +116,19 @@ class Sector:
                 }
             rotation -= 1
 
-    def connect_to_center_wormholes(self):
+    def _connect_to_center_wormholes(self):
         for sector in Table.placedSectors:
             if sector.centerWormhole:
                 self.connectedSectors.add(sector)
                 sector.connectedSectors.add(self)
 
-    def calculate_connections(self):
+    def _calculate_connections(self):
         if self.deepWarp:
-            self.connectedSectors.add(Table.deepWarpNexus)
-            Table.deepWarpNexus.connectedSectors.add(self)
+            self.connectedSectors.add(Table.warpNexus)
+            Table.warpNexus.connectedSectors.add(self)
 
         if self.centerWormhole:
-            self.connect_to_center_wormholes()
+            self._connect_to_center_wormholes()
 
         q, r = self.q, self.r
         left = Table.map[q - 1][r]
@@ -160,7 +161,7 @@ class Sector:
                     me.halfConnectedSectors.add(neighbor)
                     neighbor.halfConnectedSectors.add(me)
 
-    def init_nebula(self):
+    def _init_nebula(self):
         """
         Nebulas are basically three mini sectors squished into one. Init those mini sectors, and init a mapping of which
         "outer" wormhole they connect to. The actual "outer" sector will never connect to anything.
@@ -177,12 +178,12 @@ class Sector:
     def add_warp_portal_development(self):
         self.centerWormhole = True
         self.vpValue += 1
-        self.connect_to_center_wormholes()
+        self._connect_to_center_wormholes()
 
     def add_warp_portal_discovery(self):
         self.centerWormhole = True
         self.vpValue += 2
-        self.connect_to_center_wormholes()
+        self._connect_to_center_wormholes()
 
     def add_shell_world(self):
         self.vpValue += 5
@@ -293,3 +294,80 @@ class Sectors(Sector, Enum):
     Delta_Scuti = 289, 1, "010101", False, False, 1, 0, 1, 0, 0, 0, 0, 1, 0
     Epsilon_Scuti = 389, 1, "010100", False, False, 0, 0, 1, 0, 0, 1, 0, 1, 0
     SDSS_1133 = 989, 3, "000000", False, True, 0, 1, 0, 1, 0, 1, 1, 1, 0
+
+    @classmethod
+    def init_sectors(cls) -> tuple[list["Sectors"], list["Sectors"], list["Sectors"]]:
+        ring1 = [cls.Gastor, cls.Pollux, cls.Beta_Lenois, cls.Arcturus, cls.Zeta_Herculis, cls.Capella]
+        ring1.extend([cls.Aldebaran, cls.Mu_Cassiopiae])
+
+        ring2 = [cls.Alpha_Centauri, cls.Fomalhaut, cls.Chi_Draconis, cls.Vega, cls.Mu_Herculis, cls.Epsilon_Indi]
+        ring2.extend([cls.Zeta_Reticuli, cls.Iota_Persei, cls.Delta_Eridani, cls.Psi_Capricorni, cls.Beta_Aquilae])
+
+        ring3 = [cls.Zeta_Draconis, cls.Gamma_Serpentis, cls.Eta_Cephei, cls.Theta_Pegasi, cls.Lambda_Serpentis]
+        ring3.extend([cls.Beta_Centauri, cls.Sigma_Sagittarii, cls.Kappa_Scorpii, cls.Phi_Piscium, cls.Nu_Phoenicis])
+        ring3.extend([cls.Canopus, cls.Antares, cls.Alpha_Ursae_Minoris, cls.Spica, cls.Epsilon_Aurigae])
+        ring3.extend([cls.Iota_Carinae, cls.Beta_Crucis, cls.Gamma_Velorum])
+
+        if config.rota_sectors:
+            ring2.add(cls.Iota_Bootis)
+            ring3.extend([cls.Nu_Ophiuchi, cls.Beta_Delphini, cls.Lambda_Tauri, cls.Zeta_Andromedae])
+            ring3.add(cls.Epsilon_Carinae)
+
+        if config.rota_warp_portal:
+            ring2.add(cls.Delta_Corvi)
+            ring3.extend([cls.Delta_Sextantis, cls.Zeta_Chamaeleontis])
+
+        if config.rota_hive_sectors:
+            ring2.add(cls.Lambda_Fornacis)
+            ring3.add(cls.Upsilon_Hydrae)
+
+        if config.nebula_sectors:
+            ring2.add(cls.NGC_5189)
+            ring3.add(cls.NGC_1952)
+
+        if config.sotr_deep_warp:
+            ring1.add(cls.Alpha_Scuti)
+            ring2.add(cls.Delta_Scuti)
+            ring3.add(cls.Epsilon_Scuti)
+
+        if config.sotr_sectors:
+            ring1.extend([cls.Alpha_Lacertae, cls.Gamma_Bootis])
+            ring2.add(cls.Beta_Monocerotis)
+
+        return ring1, ring2, ring3
+
+    @classmethod
+    def ancient_homeworlds(cls) -> list["Sectors"]:
+        return [cls.Omega_Fornacis, cls.Sigma_Hydrae, cls.Theta_Ophiuchi, cls.Alpha_Lyncis]
+
+    @classmethod
+    def homeworld(cls, player: Player) -> "Sectors":
+        homeworlds = {
+            Species.Eridani: cls.Epsilon_Eridani,
+            Species.Hydran: cls.Beta_Hydri,
+            Species.Planta: cls.S1_Cygni,
+            Species.Descendants: cls.Sigma_Draconis,
+            Species.Mechanema: cls.Lambda_Fornacis,
+            Species.Orion: cls.Rigel,
+            Species.Exiles: cls.Eta_Geminorum,
+            Species.Rho_Indi: cls.Rho_Indi,
+            Species.Enlightened: cls.Beta_Lyrae,
+            Species.Unity: cls.Kappa_Pyxidis,
+            Species.Shapers: cls.Zeta_Doradus,
+        }
+        if player.species in homeworlds:
+            return homeworlds[player.species]
+        if player.species == Species.Terran:
+            by_color = {  # Really these are all the same, but might as well keep track.
+                Color.Red: cls.Procyon,
+                Color.Blue: cls.Altair,
+                Color.Green: cls.Eta_Cassiopeiae,
+                Color.Yellow: cls.Sirius,
+                Color.White: cls.Tau_Ceti,
+            }
+            return by_color.get(player.color, default=cls.Delta_Pavonis)
+        if player.species == Species.Magellan:
+            by_color = {Color.Purple: cls.Ursae_Majois_47, Color.Grey: cls.Mu_Arae}
+            return by_color.get(player.color, default=cls.Cancri_55)
+        # else Species.Octantis
+        return cls.Theta_Octantis  # other one is Nu_Octantis

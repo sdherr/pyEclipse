@@ -1,5 +1,7 @@
 from enum import Enum, StrEnum, auto
+from random import shuffle
 
+from config import config
 from ships.shipPart import ShipPart as SP
 
 
@@ -61,3 +63,46 @@ class Technology(Enum, TechnologyAttributes):
     Soliton_Cannon = TechnologyAttributes(auto(), 9, 7, TechnologyType.Rare, SP.Soliton_Cannon)
     Absorption_Shield = TechnologyAttributes(auto(), 7, 6, TechnologyType.Rare, SP.Absorption_Shield)
     Transition_Drive = TechnologyAttributes(auto(), 9, 7, TechnologyType.Rare, SP.Transition_Drive)
+
+    @classmethod
+    def init_technologies(cls) -> list["Technology"]:
+        ret = []
+        for _ in range(5):
+            ret.extend([cls.Neutron_Bombs, cls.Starbase, cls.Plasma_Cannon, cls.Gauss_Shield, cls.Improved_Hull])
+            ret.extend([cls.Fusion_Source, cls.Nanorobots, cls.Fusion_Drive, cls.Advanced_Robotics])
+        for _ in range(4):
+            ret.extend([cls.Advanced_Mining, cls.Advanced_Economy, cls.Advanced_Labs])
+            ret.extend([cls.Positron_Computer, cls.Orbital, cls.Phase_Shield])
+        for _ in range(3):
+            ret.extend([cls.Tachyon_Source, cls.Tachyon_Drive, cls.Plasma_Missile, cls.Gluon_Computer])
+            ret.extend([cls.Antimatter_Cannon, cls.Quantum_Grid, cls.Monolith, cls.Artifact_Key])
+            ret.add(cls.Wormhole_Generator)
+
+        if config.number_of_players > 6:
+            # An extra one of each, with some exceptions.
+            for tech in Technology:
+                if (
+                    tech.type == TechnologyType.Rare
+                    or tech.default_cost == 2
+                    or tech in (cls.Starbase, cls.Tachyon_Drive, cls.Artifact_Key)
+                ):
+                    continue
+                ret.add(tech)
+
+        rare = []
+        if config.rota_rare_technologies:
+            rare.extend([cls.Antimatter_Splitter, cls.Distortion_Shield, cls.Cloaking_Device, cls.Point_Defence])
+            rare.extend([cls.Conifold_Field, cls.Sentient_Hull, cls.Interceptor_Bay, cls.Flux_Missile])
+            rare.add(cls.Zero_Point_Source)
+
+        if config.sotr_rare_technologies:
+            rare.extend([cls.Absorption_Shield, cls.Metasynthesis, cls.Rift_Cannon, cls.Soliton_Cannon])
+            rare.add(cls.Transition_Drive)
+            if config.sotr_evolution:
+                rare.add(cls.Advanced_Genetics)
+
+        # max of 12 rare technoloies
+        shuffle(rare)
+        ret.extend(rare[0:12])
+
+        return ret
