@@ -1,14 +1,14 @@
 from collections import defaultdict
 from random import shuffle
 
-from config import config
-from development import Development
-from discovery import DiscoveryTile
-from distortion import Distortion
-from evolution import Evolution
-from reputation import ReputationTile
-from sector import Sector, Sectors
-from technology import Technology
+from app.models.config import config
+from app.models.development import Development
+from app.models.discovery import DiscoveryTile
+from app.models.distortion import Distortion
+from app.models.evolution import Evolution
+from app.models.reputation import ReputationTile
+from app.models.sector import Sector, Sectors
+from app.models.technology import Technology
 
 
 class Table:
@@ -16,10 +16,10 @@ class Table:
     warpNexus = Sectors.SDSS_1133
     galacticCenter = Sectors.Galactic_Center
 
-    unplacedRing1: list[Sector]
-    unplacedRing2: list[Sector]
-    unplacedRing3: list[Sector]
-    placedSectors: list[Sector] = []
+    unplacedRing1: list[Sectors]
+    unplacedRing2: list[Sectors]
+    unplacedRing3: list[Sectors]
+    placedSectors: list[Sectors] = []
 
     reputationBag: list[ReputationTile]
     discoveryBag: list[DiscoveryTile]
@@ -29,7 +29,7 @@ class Table:
     distortionBag: list[Distortion] = []
 
     def __init__(self):
-        self.map = defaultdict(defaultdict(None))
+        self.map = defaultdict(lambda: defaultdict(None))
 
         self.discoveryBag = DiscoveryTile.init_discoveries()
         shuffle(self.discoveryBag)
@@ -50,7 +50,7 @@ class Table:
             shuffle(self.evolutionBag)
 
         if config.sotr_distortions:
-            self.discoveryBag = Distortion.init_distortions()
+            self.distortionBag = Distortion.init_distortions()
             shuffle(self.distortionBag)
 
         self.unplacedRing1, self.unplacedRing2, self.unplacedRing3 = Sectors.init_sectors()

@@ -1,6 +1,6 @@
 from enum import StrEnum, auto
 
-from config import config
+from app.models.config import config
 
 
 class DiscoveryTile(StrEnum):
@@ -49,7 +49,7 @@ class DiscoveryTile(StrEnum):
                 ret.extend([cls.Money_Science_Materials, cls.Ancient_Orbital])
 
         if config.nebula_discoveries:
-            ret.add(cls.Ancient_Monolith)
+            ret.append(cls.Ancient_Monolith)
 
         if config.sotr_discoveries:
             ret.extend([cls.Plasma_Turret, cls.Soliton_Turret, cls.Rift_Turret, cls.Inversion_Shield])

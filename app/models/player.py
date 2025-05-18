@@ -1,8 +1,8 @@
 from enum import StrEnum, auto
 
-from development import Development
-from sector import Sector
-from ships.ship import (
+from app.models.development import Development
+from app.models.sector import Sector
+from app.models.ships.ship import (
     Cruiser,
     Deathmoon,
     Dreadnought,
@@ -14,8 +14,8 @@ from ships.ship import (
     ShipType,
     Starbase,
 )
-from ships.shipPart import ShipPart as SP
-from technology import Technology, TechnologyType
+from app.models.ships.shipPart import ShipPart as SP
+from app.models.technology import Technology, TechnologyType
 
 
 class Species(StrEnum):
@@ -78,19 +78,11 @@ class TechTrack:
             if slot.tech is None:
                 return slot
 
-    def add(self, tech: Technology) -> int:
-        if tech.type not in (self.type, TechnologyType.Rare):
-            raise Exception("Wrong technology type!")
-
-        slot = self.next()
-        slot.tech = tech
-        return max(tech.minimum_cost, tech.default_cost - slot.discount)
-
 
 class Ambassador:
     player: "Player"
 
-    def __self__(self, player: "Player"):
+    def __init__(self, player: "Player"):
         self.player = player
 
 
@@ -100,7 +92,7 @@ class RepAmbSlot:
     ambassador: Ambassador | None = None
     reputation: int = 0
 
-    def __self__(self, reputationAllowed: bool, ambassadorAllowed: bool):
+    def __init__(self, reputationAllowed: bool, ambassadorAllowed: bool):
         self.reputationAllowed, self.ambassadorAllowed = reputationAllowed, ambassadorAllowed
 
     def vpValue(self):

@@ -32,8 +32,8 @@ class Ship:
 class ShipBlueprint(ABC):
     reputationDraws: int
     cost: int
-    initialBlueprint: dict[SP]
-    overlayBlueprint: dict[SP]
+    initialBlueprint: dict[int, SP]
+    overlayBlueprint: dict[int, SP]
     baseInitiative: int = 0
     basePower: int = 0
     baseComputers: int = 0
@@ -59,7 +59,7 @@ class Interceptor(ShipBlueprint):
     reputationDraws = 1
 
     def __init__(self, species: S):
-        initiative_map = {S.Orion: 3, S.Planta: 0, S.Rho_Indi: 3, S.Shapers: 1}
+        initiative_map: dict[S, int] = {S.Orion: 3, S.Planta: 0, S.Rho_Indi: 3, S.Shapers: 1}
         self.baseInitiative: int = initiative_map.get(species, default=2)
 
         power_map = {S.Orion: 1, S.Planta: 2, S.Shapers: 5}

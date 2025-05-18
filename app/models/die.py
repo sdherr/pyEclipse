@@ -18,5 +18,5 @@ class Die(StrEnum):
             return 2
         elif self == Die.Blue:
             return 3
-        elif self == Die.Red:
+        else:  # Red
             return 4

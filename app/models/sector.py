@@ -309,30 +309,30 @@ class Sectors(Sector, Enum):
         ring3.extend([cls.Iota_Carinae, cls.Beta_Crucis, cls.Gamma_Velorum])
 
         if config.rota_sectors:
-            ring2.add(cls.Iota_Bootis)
+            ring2.append(cls.Iota_Bootis)
             ring3.extend([cls.Nu_Ophiuchi, cls.Beta_Delphini, cls.Lambda_Tauri, cls.Zeta_Andromedae])
-            ring3.add(cls.Epsilon_Carinae)
+            ring3.append(cls.Epsilon_Carinae)
 
         if config.rota_warp_portal:
-            ring2.add(cls.Delta_Corvi)
+            ring2.append(cls.Delta_Corvi)
             ring3.extend([cls.Delta_Sextantis, cls.Zeta_Chamaeleontis])
 
         if config.rota_hive_sectors:
-            ring2.add(cls.Lambda_Fornacis)
-            ring3.add(cls.Upsilon_Hydrae)
+            ring2.append(cls.Lambda_Fornacis)
+            ring3.append(cls.Upsilon_Hydrae)
 
         if config.nebula_sectors:
-            ring2.add(cls.NGC_5189)
-            ring3.add(cls.NGC_1952)
+            ring2.append(cls.NGC_5189)
+            ring3.append(cls.NGC_1952)
 
         if config.sotr_deep_warp:
-            ring1.add(cls.Alpha_Scuti)
-            ring2.add(cls.Delta_Scuti)
-            ring3.add(cls.Epsilon_Scuti)
+            ring1.append(cls.Alpha_Scuti)
+            ring2.append(cls.Delta_Scuti)
+            ring3.append(cls.Epsilon_Scuti)
 
         if config.sotr_sectors:
             ring1.extend([cls.Alpha_Lacertae, cls.Gamma_Bootis])
-            ring2.add(cls.Beta_Monocerotis)
+            ring2.append(cls.Beta_Monocerotis)
 
         return ring1, ring2, ring3
 

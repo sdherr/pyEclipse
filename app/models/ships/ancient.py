@@ -73,7 +73,7 @@ class AncientCruiser(ShipBlueprint):
             }
         elif self.style == 5:
             self.baseInitiative = 1
-            self.hasDistortionShield: True
+            self.hasDistortionShield = True
             self.initialBlueprint = {
                 self.LU: SP.Antimatter_Missile,
                 self.LM: SP.Plasma_Cannon,
@@ -118,7 +118,7 @@ class AncientDreadnought(ShipBlueprint):
     canHaveDrive = False
     styles = ["GCDS", "A", "B"]
 
-    def __init__(self, style: str = None):
+    def __init__(self, style: str = ""):
         if not style:
             shuffle(self.styles)
             style = self.styles.pop()
@@ -170,12 +170,12 @@ class Anomaly(ShipBlueprint):
     vpValue = 1
     basePower = 1000  # High enough to never be an issue
     styles = [1, 2, 3, 4, 5, 6]
-    isMobile: bool
+    canHaveDrive: bool
     color: WorldType
 
     def __init__(self, isMobile: bool):
         self.overlayBlueprint = {}
-        self.isMobile = isMobile
+        self.canHaveDrive = isMobile
         # Choose a random style and pop it so it can't be re-created.
         shuffle(self.styles)
         self.style = self.styles.pop()
@@ -205,7 +205,3 @@ class Anomaly(ShipBlueprint):
             self.baseInitiative = 1
             self.initialBlueprint[self.MM] = SP.Improved_Hull  # replace rift cannon with hull
             self.initialBlueprint[self.RD] = SP.Improved_Hull
-
-    @property
-    def canHaveDrive(self):
-        return self.isMobile

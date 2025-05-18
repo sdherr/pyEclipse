@@ -1,6 +1,6 @@
 from enum import StrEnum, auto
 
-from config import config
+from app.models.config import config
 
 
 class ReputationTileType(StrEnum):
@@ -37,14 +37,14 @@ class ReputationTile:
             ret.append(ReputationTile(ReputationTileType.Points, 1))
 
         if config.rota_special_reputation:
-            ret.add(ReputationTile(ReputationTileType.Advanced_Reaction, 0))
-            ret.add(ReputationTile(ReputationTileType.Bonus_Build, 0))
-            ret.add(ReputationTile(ReputationTileType.Bonus_Move, 0))
-            ret.add(ReputationTile(ReputationTileType.Bonus_Targeting, 0))
-            ret.add(ReputationTile(ReputationTileType.Bonus_Upgrade, 0))
-            ret.add(ReputationTile(ReputationTileType.Double_Action, 0))
-            ret.add(ReputationTile(ReputationTileType.Priority_Action, 0))
-            ret.add(ReputationTile(ReputationTileType.Re_Roll, 0))
-            ret.add(ReputationTile(ReputationTileType.Resource_Gain, 0))
+            ret.append(ReputationTile(ReputationTileType.Advanced_Reaction, 0))
+            ret.append(ReputationTile(ReputationTileType.Bonus_Build, 0))
+            ret.append(ReputationTile(ReputationTileType.Bonus_Move, 0))
+            ret.append(ReputationTile(ReputationTileType.Bonus_Targeting, 0))
+            ret.append(ReputationTile(ReputationTileType.Bonus_Upgrade, 0))
+            ret.append(ReputationTile(ReputationTileType.Double_Action, 0))
+            ret.append(ReputationTile(ReputationTileType.Priority_Action, 0))
+            ret.append(ReputationTile(ReputationTileType.Re_Roll, 0))
+            ret.append(ReputationTile(ReputationTileType.Resource_Gain, 0))
 
         return ret
