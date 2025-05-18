@@ -7,19 +7,19 @@ from app.models.discovery import DiscoveryTile
 from app.models.distortion import Distortion
 from app.models.evolution import Evolution
 from app.models.reputation import ReputationTile
-from app.models.sector import Sector, Sectors
+from app.models.sector import Sector
 from app.models.technology import Technology
 
 
 class Table:
     map: dict[int, dict[int, Sector | None]]  # 2-d dict using our q and r Axial coordinates
-    warpNexus = Sectors.SDSS_1133
-    galacticCenter = Sectors.Galactic_Center
+    warpNexus = Sector.SDSS_1133
+    galacticCenter = Sector.Galactic_Center
 
-    unplacedRing1: list[Sectors]
-    unplacedRing2: list[Sectors]
-    unplacedRing3: list[Sectors]
-    placedSectors: list[Sectors] = []
+    unplacedRing1: list[Sector]
+    unplacedRing2: list[Sector]
+    unplacedRing3: list[Sector]
+    placedSectors: list[Sector] = []
 
     reputationBag: list[ReputationTile]
     discoveryBag: list[DiscoveryTile]
@@ -53,7 +53,7 @@ class Table:
             self.distortionBag = Distortion.init_distortions()
             shuffle(self.distortionBag)
 
-        self.unplacedRing1, self.unplacedRing2, self.unplacedRing3 = Sectors.init_sectors()
+        self.unplacedRing1, self.unplacedRing2, self.unplacedRing3 = Sector.init_sectors()
         shuffle(self.unplacedRing1)
         shuffle(self.unplacedRing2)
         shuffle(self.unplacedRing3)

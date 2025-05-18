@@ -2,25 +2,24 @@ from enum import Enum
 
 from app.models.config import config
 from app.models.discovery import DiscoveryTile
-from app.models.player import Color, Player, Species
-from app.models.ships.ancient import AncientCruiser, AncientDreadnought, AncientInterceptor, Anomaly
-from app.models.ships.ship import Ship
+from app.models.player import Color, Player, Species, ancient
+from app.models.ships.ship import Ship, ShipType
 from app.models.table import Table
 from app.models.world import World, WorldType
 
 
-class Sector:
+class Sector(Enum):
     id: int
     vpValue: int
     wormholes: str
-    discovery: DiscoveryTile | None = None
-    artifacts: int = 0  # Can potentially have 2 because of Orbital Discovery
+    discovery: DiscoveryTile | None
+    artifacts: int  # Can potentially have 2 because of Orbital Discovery
     worlds: list[World]
     ships: list[Ship]
     controllingPlayer: Player
-    centerWormhole: bool = False
-    deepWarp: bool = False
-    monolith: bool = False
+    centerWormhole: bool
+    deepWarp: bool
+    monolith: bool
     adjacentSectors: set["Sector"]
     connectedSectors: set["Sector"]
     halfConnectedSectors: set["Sector"]
@@ -28,6 +27,12 @@ class Sector:
     # Axial Coordinates: https://www.redblobgames.com/grids/hexagons/#coordinates-axial
     q: int
     r: int
+
+    def __new__(cls, id: int, *args):
+        # https://docs.python.org/3/howto/enum.html#using-a-custom-new
+        obj = object.__new__(cls)
+        obj._value_ = id
+        return obj
 
     def __init__(
         self,
@@ -46,6 +51,9 @@ class Sector:
         advWhite: int,
         ancientInterceptors: int,
     ):
+        self.centerWormhole = False
+        self.deepWarp = False
+        self.monolith = False
         self.id = id
         self.vpValue = vpValue
         self.wormholes = wormholes
@@ -64,143 +72,35 @@ class Sector:
 
         self.ships = []
         if id == 1:  # Galactic Center
-            self.ships.append(AncientDreadnought())
+            self.ships.append(Ship(self, ShipType.AncientDreadnought, ancient))
         for _ in range(ancientInterceptors):
-            self.ships.append(AncientInterceptor())
+            self.ships.append(Ship(self, ShipType.AncientInterceptor, ancient))
         # Ancient Homeworlds
         if id >= 271 and id <= 274:
-            self.ships.add(AncientCruiser())
+            self.ships.append(Ship(self, ShipType.AncientCruiser, ancient))
 
         self.centerWormhole = id in (281, 381, 382)
 
         # Exile's Homeworld
         if id == 234:
-            self.worlds.add(WorldType.ORBITAL, 1, 0)
+            self.worlds.append(World(WorldType.ORBITAL, 1, 0))
 
         # TODO: Something else for Hive sectors? 212 and 319
 
-        if id == 295 or id == 395:  # Nebulas are basically three mini sectors in one. Init the mini sectors.
+        # Nebulas are basically three mini sectors in one. Init the mini sectors.
+        if id == 295 or id == 395:
             self._init_nebula()
 
         # Deep Warp Sectors
         self.deepWarp = id in (189, 289, 389)
 
-        # Warp Nexus
+        # Warp Nexus TODO: allow choice about mobility
         if id == 989:
-            self.ships.append(Anomaly(False))  # TODO: allow choice about mobility
-            self.ships.append(Anomaly(False))
-            self.ships.append(Anomaly(False))
-            self.ships.append(Anomaly(False))
+            self.ships.append(Ship(self, ShipType.Anomaly, ancient))
+            self.ships.append(Ship(self, ShipType.Anomaly, ancient))
+            self.ships.append(Ship(self, ShipType.Anomaly, ancient))
+            self.ships.append(Ship(self, ShipType.Anomaly, ancient))
 
-    def place(self, q: int, r: int, rotation: int):
-        """
-        Q and R are our axial coordinate representation.
-        https://www.redblobgames.com/grids/hexagons/#coordinates-axial
-
-        rotation represents how the wormholes need to rotate, 0 = None, -1 = 1 to the left, 2 = 2 to the right
-        """
-        self.q, self.r = q, r
-        while rotation < 0:  # normalize to only rotating one direction
-            rotation += 6
-
-        while rotation > 0:
-            self.wormholes = self.wormholes[5] + self.wormholes[0:5]
-            if self.nebula:
-                self.nebula = {
-                    0: self.nebula[5],
-                    1: self.nebula[0],
-                    2: self.nebula[1],
-                    3: self.nebula[2],
-                    4: self.nebula[3],
-                    5: self.nebula[4],
-                }
-            rotation -= 1
-
-    def _connect_to_center_wormholes(self):
-        for sector in Table.placedSectors:
-            if sector.centerWormhole:
-                self.connectedSectors.add(sector)
-                sector.connectedSectors.add(self)
-
-    def _calculate_connections(self):
-        if self.deepWarp:
-            self.connectedSectors.add(Table.warpNexus)
-            Table.warpNexus.connectedSectors.add(self)
-
-        if self.centerWormhole:
-            self._connect_to_center_wormholes()
-
-        q, r = self.q, self.r
-        left = Table.map[q - 1][r]
-        leftDown = Table.map[q - 1][r + 1]
-        leftUp = Table.map[q][r - 1]
-        rightDown = Table.map[q][r + 1]
-        rightUp = Table.map[q + 1][r - 1]
-        right = Table.map[q + 1][r]
-        for neighbor, my_idx in ((rightUp, 0), (right, 1), (rightDown, 2), (leftDown, 3), (left, 4), (leftUp, 5)):
-            if neighbor is not None:
-                neighbor_idx = my_idx + 3  # whichever side I'm connecting on, he's connecting in the opposite direction
-                if neighbor_idx > 5:
-                    neighbor_idx -= 6  # normalize
-
-                # If one of us is a nebula we want to connect to the subsector
-                me = self
-                if self.nebula:
-                    me = self.nebula[my_idx]
-                if neighbor.nebula:
-                    neighbor = neighbor.nebula[neighbor_idx]
-
-                # finally connect them
-                if me.wormholes[my_idx] == "1" and neighbor.wormholes[neighbor_idx] == "1":
-                    me.connectedSectors.add(neighbor)
-                    neighbor.connectedSectors.add(me)
-                elif me.wormholes[my_idx] == "0" and neighbor.wormholes[neighbor_idx] == "0":
-                    me.adjacentSectors.add(neighbor)
-                    neighbor.adjacentSectors.add(me)
-                else:  # One is and one aint
-                    me.halfConnectedSectors.add(neighbor)
-                    neighbor.halfConnectedSectors.add(me)
-
-    def _init_nebula(self):
-        """
-        Nebulas are basically three mini sectors squished into one. Init those mini sectors, and init a mapping of which
-        "outer" wormhole they connect to. The actual "outer" sector will never connect to anything.
-        """
-        if self.id == 295:
-            a, b, c = Sectors._Nebula_Sub_A, Sectors._Nebula_Sub_B, Sectors._Nebula_Sub_E
-        else:
-            a, b, c = Sectors._Nebula_Sub_C, Sectors._Nebula_Sub_D, Sectors._Nebula_Sub_F
-        a.connectedSectors.update((b, c))
-        b.connectedSectors.update((a, c))
-        c.connectedSectors.update((a, b))
-        self.nebula = {0: a, 1: c, 2: c, 3: b, 4: b, 5: a}
-
-    def add_warp_portal_development(self):
-        self.centerWormhole = True
-        self.vpValue += 1
-        self._connect_to_center_wormholes()
-
-    def add_warp_portal_discovery(self):
-        self.centerWormhole = True
-        self.vpValue += 2
-        self._connect_to_center_wormholes()
-
-    def add_shell_world(self):
-        self.vpValue += 5
-        self.worlds.append(World(WorldType.PINK, 1, 0))
-
-    def add_orbital_discovery(self):
-        self.artifacts += 1
-        self.add_orbital()
-
-    def add_orbital(self):
-        self.worlds.append(World(WorldType.ORBITAL, 1, 0))
-
-    def add_monolith(self):
-        self.monolith = True
-
-
-class Sectors(Sector, Enum):
     Galactic_Center = 1, 4, "111111", True, True, 1, 1, 1, 1, 0, 0, 2, 0, 0
     Gastor = 101, 2, "011111", True, False, 1, 1, 0, 0, 1, 0, 0, 0, 1
     Pollux = 102, 3, "101101", False, True, 0, 0, 1, 1, 0, 0, 0, 0, 0
@@ -296,22 +196,24 @@ class Sectors(Sector, Enum):
     SDSS_1133 = 989, 3, "000000", False, True, 0, 1, 0, 1, 0, 1, 1, 1, 0
 
     @classmethod
-    def init_sectors(cls) -> tuple[list["Sectors"], list["Sectors"], list["Sectors"]]:
-        ring1 = [cls.Gastor, cls.Pollux, cls.Beta_Lenois, cls.Arcturus, cls.Zeta_Herculis, cls.Capella]
-        ring1.extend([cls.Aldebaran, cls.Mu_Cassiopiae])
+    def init_sectors(cls) -> tuple[list["Sector"], list["Sector"], list["Sector"]]:
+        ring1 = [cls.Gastor, cls.Pollux, cls.Beta_Lenois, cls.Arcturus, cls.Zeta_Herculis]
+        ring1.extend([cls.Capella, cls.Aldebaran, cls.Mu_Cassiopiae])
 
-        ring2 = [cls.Alpha_Centauri, cls.Fomalhaut, cls.Chi_Draconis, cls.Vega, cls.Mu_Herculis, cls.Epsilon_Indi]
-        ring2.extend([cls.Zeta_Reticuli, cls.Iota_Persei, cls.Delta_Eridani, cls.Psi_Capricorni, cls.Beta_Aquilae])
+        ring2 = [cls.Alpha_Centauri, cls.Fomalhaut, cls.Chi_Draconis, cls.Vega, cls.Mu_Herculis]
+        ring2.extend([cls.Epsilon_Indi, cls.Zeta_Reticuli, cls.Iota_Persei, cls.Delta_Eridani])
+        ring2.extend([cls.Psi_Capricorni, cls.Beta_Aquilae])
 
-        ring3 = [cls.Zeta_Draconis, cls.Gamma_Serpentis, cls.Eta_Cephei, cls.Theta_Pegasi, cls.Lambda_Serpentis]
-        ring3.extend([cls.Beta_Centauri, cls.Sigma_Sagittarii, cls.Kappa_Scorpii, cls.Phi_Piscium, cls.Nu_Phoenicis])
-        ring3.extend([cls.Canopus, cls.Antares, cls.Alpha_Ursae_Minoris, cls.Spica, cls.Epsilon_Aurigae])
+        ring3 = [cls.Zeta_Draconis, cls.Gamma_Serpentis, cls.Eta_Cephei, cls.Theta_Pegasi]
+        ring3.extend([cls.Lambda_Serpentis, cls.Beta_Centauri, cls.Sigma_Sagittarii])
+        ring3.extend([cls.Kappa_Scorpii, cls.Phi_Piscium, cls.Nu_Phoenicis, cls.Canopus])
+        ring3.extend([cls.Antares, cls.Alpha_Ursae_Minoris, cls.Spica, cls.Epsilon_Aurigae])
         ring3.extend([cls.Iota_Carinae, cls.Beta_Crucis, cls.Gamma_Velorum])
 
         if config.rota_sectors:
             ring2.append(cls.Iota_Bootis)
-            ring3.extend([cls.Nu_Ophiuchi, cls.Beta_Delphini, cls.Lambda_Tauri, cls.Zeta_Andromedae])
-            ring3.append(cls.Epsilon_Carinae)
+            ring3.extend([cls.Nu_Ophiuchi, cls.Beta_Delphini, cls.Lambda_Tauri])
+            ring3.extend([cls.Zeta_Andromedae, cls.Epsilon_Carinae])
 
         if config.rota_warp_portal:
             ring2.append(cls.Delta_Corvi)
@@ -337,11 +239,11 @@ class Sectors(Sector, Enum):
         return ring1, ring2, ring3
 
     @classmethod
-    def ancient_homeworlds(cls) -> list["Sectors"]:
+    def ancient_homeworlds(cls) -> list["Sector"]:
         return [cls.Omega_Fornacis, cls.Sigma_Hydrae, cls.Theta_Ophiuchi, cls.Alpha_Lyncis]
 
     @classmethod
-    def homeworld(cls, player: Player) -> "Sectors":
+    def homeworld(cls, player: Player) -> "Sector":
         homeworlds = {
             Species.Eridani: cls.Epsilon_Eridani,
             Species.Hydran: cls.Beta_Hydri,
@@ -365,9 +267,126 @@ class Sectors(Sector, Enum):
                 Color.Yellow: cls.Sirius,
                 Color.White: cls.Tau_Ceti,
             }
-            return by_color.get(player.color, default=cls.Delta_Pavonis)
+            return by_color.get(player.color, cls.Delta_Pavonis)
         if player.species == Species.Magellan:
             by_color = {Color.Purple: cls.Ursae_Majois_47, Color.Grey: cls.Mu_Arae}
-            return by_color.get(player.color, default=cls.Cancri_55)
+            return by_color.get(player.color, cls.Cancri_55)
         # else Species.Octantis
         return cls.Theta_Octantis  # other one is Nu_Octantis
+
+    def place(self, q: int, r: int, rotation: int):
+        """
+        Q and R are our axial coordinate representation.
+        https://www.redblobgames.com/grids/hexagons/#coordinates-axial
+
+        rotation represents how the wormholes need to rotate, 0 = None, -1 = 1 to the left,
+        2 = 2 to the right
+        """
+        self.q, self.r = q, r
+        while rotation < 0:  # normalize to only rotating one direction
+            rotation += 6
+
+        while rotation > 0:
+            self.wormholes = self.wormholes[5] + self.wormholes[0:5]
+            if self.nebula:
+                self.nebula = {
+                    0: self.nebula[5],
+                    1: self.nebula[0],
+                    2: self.nebula[1],
+                    3: self.nebula[2],
+                    4: self.nebula[3],
+                    5: self.nebula[4],
+                }
+            rotation -= 1
+
+    def _connect_to_center_wormholes(self):
+        for sector in Table.placedSectors:
+            if sector.centerWormhole:
+                self.connectedSectors.add(sector)
+                sector.connectedSectors.add(self)
+
+    def _calculate_connections(self):
+        if self.deepWarp:
+            self.connectedSectors.add(Table.warpNexus)
+            Table.warpNexus.connectedSectors.add(self)
+
+        if self.centerWormhole:
+            self._connect_to_center_wormholes()
+
+        q, r = self.q, self.r
+        left = Table.map[q - 1][r]
+        leftDown = Table.map[q - 1][r + 1]
+        leftUp = Table.map[q][r - 1]
+        rightDown = Table.map[q][r + 1]
+        rightUp = Table.map[q + 1][r - 1]
+        right = Table.map[q + 1][r]
+        for neighbor, my_idx in (
+            (rightUp, 0),
+            (right, 1),
+            (rightDown, 2),
+            (leftDown, 3),
+            (left, 4),
+            (leftUp, 5),
+        ):
+            if neighbor is not None:
+                # whichever side I'm connecting on, he's connecting in the opposite direction
+                neighbor_idx = my_idx + 3
+                if neighbor_idx > 5:
+                    neighbor_idx -= 6  # normalize
+
+                # If one of us is a nebula we want to connect to the subsector
+                me = self
+                if self.nebula:
+                    me = self.nebula[my_idx]
+                if neighbor.nebula:
+                    neighbor = neighbor.nebula[neighbor_idx]
+
+                # finally connect them
+                if me.wormholes[my_idx] == "1" and neighbor.wormholes[neighbor_idx] == "1":
+                    me.connectedSectors.add(neighbor)
+                    neighbor.connectedSectors.add(me)
+                elif me.wormholes[my_idx] == "0" and neighbor.wormholes[neighbor_idx] == "0":
+                    me.adjacentSectors.add(neighbor)
+                    neighbor.adjacentSectors.add(me)
+                else:  # One is and one aint
+                    me.halfConnectedSectors.add(neighbor)
+                    neighbor.halfConnectedSectors.add(me)
+
+    def _init_nebula(self):
+        """
+        Nebulas are basically three mini sectors squished into one.
+        Init those mini sectors, and init a mapping of which "outer" wormhole they connect to.
+        The actual "outer" sector will never connect to anything.
+        """
+        if self.id == 295:
+            a, b, c = Sector._Nebula_Sub_A, Sector._Nebula_Sub_B, Sector._Nebula_Sub_E
+        else:
+            a, b, c = Sector._Nebula_Sub_C, Sector._Nebula_Sub_D, Sector._Nebula_Sub_F
+        a.connectedSectors.update((b, c))
+        b.connectedSectors.update((a, c))
+        c.connectedSectors.update((a, b))
+        self.nebula = {0: a, 1: c, 2: c, 3: b, 4: b, 5: a}
+
+    def add_warp_portal_development(self):
+        self.centerWormhole = True
+        self.vpValue += 1
+        self._connect_to_center_wormholes()
+
+    def add_warp_portal_discovery(self):
+        self.centerWormhole = True
+        self.vpValue += 2
+        self._connect_to_center_wormholes()
+
+    def add_shell_world(self):
+        self.vpValue += 5
+        self.worlds.append(World(WorldType.PINK, 1, 0))
+
+    def add_orbital_discovery(self):
+        self.artifacts += 1
+        self.add_orbital()
+
+    def add_orbital(self):
+        self.worlds.append(World(WorldType.ORBITAL, 1, 0))
+
+    def add_monolith(self):
+        self.monolith = True

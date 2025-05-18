@@ -16,6 +16,10 @@ class ShipType(StrEnum):
     Orbital = auto()
     Monolith = auto()
     Deathmoon = auto()
+    AncientInterceptor = auto()
+    AncientCruiser = auto()
+    AncientDreadnought = auto()
+    Anomaly = auto()
 
 
 class Ship:
@@ -60,21 +64,25 @@ class Interceptor(ShipBlueprint):
 
     def __init__(self, species: S):
         initiative_map: dict[S, int] = {S.Orion: 3, S.Planta: 0, S.Rho_Indi: 3, S.Shapers: 1}
-        self.baseInitiative: int = initiative_map.get(species, default=2)
+        self.baseInitiative: int = initiative_map.get(species, 2)
 
         power_map = {S.Orion: 1, S.Planta: 2, S.Shapers: 5}
-        self.basePower: int = power_map.get(species, default=0)
+        self.basePower: int = power_map.get(species, 0)
 
         self.baseComputers = 1 if species == S.Planta else 0
         self.baseShields = 1 if species == S.Rho_Indi else 0
 
         cost_map = {S.Mechanema: 2, S.Rho_Indi: 4, S.Unity: 2}
-        self.cost: int = cost_map.get(species, default=3)
+        self.cost: int = cost_map.get(species, 3)
 
-        left_part = {S.Orion: SP.Gauss_Shield, S.Planta: SP.Non_Existent, S.Shapers: SP.Electron_Computer}
+        left_part = {
+            S.Orion: SP.Gauss_Shield,
+            S.Planta: SP.Non_Existent,
+            S.Shapers: SP.Electron_Computer,
+        }
         down_part = SP.Non_Existent if species == S.Shapers else SP.Nuclear_Source
         self.initialBlueprint = {
-            self.LM: left_part.get(species, default=SP.Empty),
+            self.LM: left_part.get(species, SP.Empty),
             self.MU: SP.Ion_Cannon,
             self.MD: down_part,
             self.RM: SP.Nuclear_Drive,
@@ -87,23 +95,27 @@ class Cruiser(ShipBlueprint):
 
     def __init__(self, species: S):
         initiative_map = {S.Orion: 2, S.Planta: 0, S.Rho_Indi: 2, S.Shapers: 0}
-        self.baseInitiative: int = initiative_map.get(species, default=1)
+        self.baseInitiative: int = initiative_map.get(species, 1)
 
         power_map = {S.Orion: 2, S.Planta: 2, S.Shapers: 5}
-        self.basePower: int = power_map.get(species, default=0)
+        self.basePower: int = power_map.get(species, 0)
 
         self.baseComputers = 1 if species == S.Planta else 0
         self.baseShields = 1 if species == S.Rho_Indi else 0
 
         cost_map = {S.Mechanema: 4, S.Rho_Indi: 6, S.Unity: 4}
-        self.cost: int = cost_map.get(species, default=5)
+        self.cost: int = cost_map.get(species, 5)
 
-        ld_part_map = {S.Orion: SP.Gauss_Shield, S.Planta: SP.Non_Existent, S.Shapers: SP.Non_Existent}
+        ld_part_map = {
+            S.Orion: SP.Gauss_Shield,
+            S.Planta: SP.Non_Existent,
+            S.Shapers: SP.Non_Existent,
+        }
         lu_part = SP.Empty if species == S.Shapers else SP.Hull
         md_part = SP.Hull if species == S.Shapers else SP.Nuclear_Source
         self.initialBlueprint = {
             self.LM: lu_part,
-            self.LD: ld_part_map.get(species, default=SP.Empty),
+            self.LD: ld_part_map.get(species, SP.Empty),
             self.MU: SP.Ion_Cannon,
             self.MD: md_part,
             self.RM: SP.Electron_Computer,
@@ -122,7 +134,7 @@ class Dreadnought(ShipBlueprint):
         self.baseInitiative = 1 if species == S.Orion else 0
 
         power_map = {S.Orion: 3, S.Planta: 2, S.Eridani: 1, S.Shapers: 5}
-        self.basePower = power_map.get(species, default=0)
+        self.basePower = power_map.get(species, 0)
 
         self.baseComputers = 1 if species == S.Planta else 0
         self.baseShields = 0
@@ -159,17 +171,17 @@ class Starbase(ShipBlueprint):
 
     def __init__(self, species: S):
         initiative_map = {S.Orion: 5, S.Planta: 2, S.Shapers: 3}
-        self.baseInitiative = initiative_map.get(species, default=4)
+        self.baseInitiative = initiative_map.get(species, 4)
 
         self.basePower = 5 if species in (S.Planta, S.Shapers) else 3
         self.baseComputers = 1 if species == S.Planta else 0
         self.baseShields = 1 if species == S.Rho_Indi else 0
 
         cost_map = {S.Mechanema: 2, S.Rho_Indi: 4}
-        self.cost = cost_map.get(species, default=3)
+        self.cost = cost_map.get(species, 3)
 
         dp_map = {S.Orion: SP.Gauss_Shield, S.Planta: SP.Non_Existent, S.Shapers: SP.Non_Existent}
-        dp = dp_map.get(species, default=SP.Empty)
+        dp = dp_map.get(species, SP.Empty)
         up = SP.Soliton_Cannon if species == S.Shapers else SP.Ion_Cannon
         self.initialBlueprint = {
             self.LM: SP.Hull,
@@ -221,7 +233,11 @@ class Orbital(ShipBlueprint):
         if species != S.Exiles:
             self.reputationDraws = 0
             self.cost = 4 if species == S.Mechanema else 5
-            self.initialBlueprint = {self.MU: SP.Non_Existent, self.LD: SP.Non_Existent, self.RD: SP.Non_Existent}
+            self.initialBlueprint = {
+                self.MU: SP.Non_Existent,
+                self.LD: SP.Non_Existent,
+                self.RD: SP.Non_Existent,
+            }
             return
 
         self.reputationDraws = 1

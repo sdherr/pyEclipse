@@ -35,6 +35,7 @@ class Species(StrEnum):
     Octantis = auto()
     Shapers = auto()
     Unity = auto()
+    Ancient = auto()
 
 
 class Color(StrEnum):
@@ -47,6 +48,7 @@ class Color(StrEnum):
     Purple = auto()
     Natural = auto()
     Grey = auto()
+    Ancient = auto()
 
 
 class TechTrack:
@@ -71,7 +73,9 @@ class TechTrack:
         for slot in self.slots[::-1]:
             if slot.tech is not None:
                 return slot.vpValue
-        raise Exception("TechTrack.vpValue: This can't happen, but things whine if it's possible to return None.")
+        raise Exception(
+            "TechTrack.vpValue: Can't happen, but things whine if it's possible to return None."
+        )
 
     def next(self) -> "TechTrack.Slot | None":
         for slot in self.slots:
@@ -92,8 +96,9 @@ class RepAmbSlot:
     ambassador: Ambassador | None = None
     reputation: int = 0
 
-    def __init__(self, reputationAllowed: bool, ambassadorAllowed: bool):
-        self.reputationAllowed, self.ambassadorAllowed = reputationAllowed, ambassadorAllowed
+    def __init__(self, reputationOnly: bool = False, ambassadorOnly: bool = False):
+        self.reputationAllowed = not ambassadorOnly
+        self.ambassadorAllowed = not reputationOnly
 
     def vpValue(self):
         if self.ambassador is not None:
@@ -121,9 +126,9 @@ class InfluenceTrack:
 class Player:
     color: Color
     species: Species
-    money: int
-    science: int
-    materials: int
+    money: int = 0
+    science: int = 0
+    materials: int = 0
     mutagen: int = 0
     tradeRate: int = 3  # "x to 1"
     colonyShips: int = 3
@@ -171,7 +176,7 @@ class Player:
         }
         self.repAmbTrack = RepAmbTrack()
         for _ in range(4):
-            self.repAmbTrack.slots.append(RepAmbSlot(reputationAllowed=True, ambassadorAllowed=True))
+            self.repAmbTrack.slots.append(RepAmbSlot())
 
         if species != Species.Orion:  # Just so we don't have to add the line in every case.
             self.ships.append(Ship(sector, ShipType.Interceptor, self))
@@ -180,7 +185,7 @@ class Player:
             self.money, self.science, self.materials = 2, 3, 3
             self.tradeRate, self.activationsOnMove = 2, 3
             self.research(Technology.Starbase, free=True)
-            self.repAmbTrack.slots.append(RepAmbSlot(reputationAllowed=False, ambassadorAllowed=True))
+            self.repAmbTrack.slots.append(RepAmbSlot(ambassadorOnly=True))
         elif species == Species.Descendants:
             self.money, self.science, self.materials = 2, 4, 3
         elif species == Species.Orion:
@@ -189,17 +194,17 @@ class Player:
             self.research(Technology.Neutron_Bombs, free=True)
             self.research(Technology.Gauss_Shield, free=True)
             self.ships.append(Ship(sector, ShipType.Cruiser, self))
-            self.repAmbTrack.slots.append(RepAmbSlot(reputationAllowed=True, ambassadorAllowed=False))
+            self.repAmbTrack.slots.append(RepAmbSlot(reputationOnly=True))
         elif species == Species.Hydran:
             self.money, self.science, self.materials = 2, 5, 2
             self.technologiesOnResearch = 2
             self.research(Technology.Advanced_Labs, free=True)
-            self.repAmbTrack.slots[0] = RepAmbSlot(reputationAllowed=False, ambassadorAllowed=True)
+            self.repAmbTrack.slots[0] = RepAmbSlot(ambassadorOnly=True)
         elif species == Species.Planta:
             self.money, self.science, self.materials = 4, 4, 4
             self.colonyShips, self.sectorsToExplore = 4, 2
             self.research(Technology.Starbase, free=True)
-            self.repAmbTrack.slots[0] = RepAmbSlot(reputationAllowed=False, ambassadorAllowed=True)
+            self.repAmbTrack.slots[0] = RepAmbSlot(ambassadorOnly=True)
         elif species == Species.Mechanema:
             self.money, self.science, self.materials = 3, 3, 3
             self.shipPartsOnUpgrade, self.shipsOnBuild = 3, 3
@@ -219,9 +224,9 @@ class Player:
             self.research(Technology.Starbase, free=True)
             self.research(Technology.Gauss_Shield, free=True)
             self.ships.append(Ship(sector, ShipType.Interceptor, self))  # A second one
-            self.repAmbTrack.slots[2] = RepAmbSlot(reputationAllowed=True, ambassadorAllowed=False)
-            self.repAmbTrack.slots[3] = RepAmbSlot(reputationAllowed=True, ambassadorAllowed=False)
-            self.repAmbTrack.slots.append(RepAmbSlot(reputationAllowed=True, ambassadorAllowed=False))
+            self.repAmbTrack.slots[2] = RepAmbSlot(reputationOnly=True)
+            self.repAmbTrack.slots[3] = RepAmbSlot(reputationOnly=True)
+            self.repAmbTrack.slots.append(RepAmbSlot(reputationOnly=True))
             self.blueprints.pop(ShipType.Dreadnought)
         elif species == Species.Exiles:
             self.money, self.science, self.materials = 3, 2, 4
@@ -245,7 +250,9 @@ class Player:
             self.mutagen = 4
             self.research(Technology.Fusion_Drive)
 
-    def research(self, tech: Technology, free: bool = False, chosenType: TechnologyType = TechnologyType.Rare):
+    def research(
+        self, tech: Technology, free: bool = False, chosenType: TechnologyType = TechnologyType.Rare
+    ):
         if tech.type == TechnologyType.Rare:
             if chosenType == TechnologyType.Rare:
                 raise Exception("You must choose another type for Rare Technologies.")
@@ -284,3 +291,6 @@ class Player:
         elif tech == Technology.Monolith:
             self.blueprints[ShipType.Monolith] = Monolith(self.species)
         # TODO: The others that are neither ship-part techs nor one of the above.
+
+
+ancient = Player(Color.Ancient, Species.Ancient, Sector.Galactic_Center)

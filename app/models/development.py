@@ -30,8 +30,8 @@ class Development(DevelopmentCost, Enum):
     def init_developments(cls) -> list["Development"]:
         ret = []
         if config.rota_developments:
-            ret.extend([cls.Ancient_Monument, cls.Artifact_Link, cls.Diplomatic_Fleet, cls.Mining_Colony])
-            ret.extend([cls.Research_Station, cls.Trade_Fleet, cls.Shellworld])
+            ret.extend([cls.Ancient_Monument, cls.Artifact_Link, cls.Diplomatic_Fleet])
+            ret.extend([cls.Mining_Colony, cls.Research_Station, cls.Trade_Fleet, cls.Shellworld])
             if config.rota_warp_portal:
                 ret.append(cls.Warp_Portal)
 
